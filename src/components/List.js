@@ -1,11 +1,37 @@
-import React, {useEffect} from 'react';
+import React from 'react';
+import styled from "styled-components";
 import {DragDropContext, Draggable, Droppable} from 'react-beautiful-dnd';
+import {Button} from "@material-ui/core";
 import api from "../utils/api";
+import DeleteIcon from '@material-ui/icons/Delete';
+import moment from "moment";
+
+const Listing = styled.ul`
+  transition: background-color 0.5s ease;
+  list-style: none;
+`
+
+const Item = styled.li`
+
+`
+const ItemContent = styled.div`
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+`
+const Title = styled.div`
+  padding: 10px;
+  border-bottom: 1px #3a3739 solid;
+  display: flex;
+  justify-content: center;
+`
 
 const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
+    console.log('reor',result)
 
     return result;
 };
@@ -19,38 +45,28 @@ const getItemStyle = (draggableStyle, isDragging) => ({
     margin: `0 0 ${grid}px 0`,
 
     // change background colour if dragging
-    background: isDragging ? '#ffff77' : 'grey',
+    background: isDragging ? 'rgba(193,255,245,0.51)' : 'white',
 
     // styles we need to apply on draggables
     ...draggableStyle
 });
 
 const getListStyle = (isDraggingOver) => ({
-    background: isDraggingOver ? 'lightblue' : 'lightgrey',
+    background: isDraggingOver ? '#c3ffc8' : '#fff992',
     padding: grid,
-    width: 250
 });
 
 
-function List({setList, list, ...props}) {
-
-
-
-    useEffect(() => {
-
-        const getTodos = async () => {
-            try {
-                let {items} = await api(`/items/`, 'GET')
-                setList(items)
-                console.log('trollo', items)
-            } catch (e) {
-                console.error('Could not get todo list')
-            }
+function List({setList, list, generateRandom, ...props}) {
+    const handleDelete = async (event, itemId) => {
+        try {
+            let response = await api(`/items/${itemId}`, 'delete')
+            generateRandom(Math.random())
+            console.log(response)
+        } catch (e) {
+            console.error(e)
         }
-
-        getTodos()
-
-    }, [setList]);
+    }
 
     const onDragEnd = async (result) => {
         // dropped outside the list
@@ -58,66 +74,85 @@ function List({setList, list, ...props}) {
             return;
         }
 
-        const items = reorder(
+        console.log('result',result)
+        let items = reorder(
             list,
             result.source.index,
             result.destination.index
         );
 
-        let dataToSend = {items: items.map(({position, ...itemParams},idx) => { return {position: idx.toString(), ...itemParams}})}
+
+        console.log(items)
         try {
-            let response = await api(`/items/edit`,'put', dataToSend )
-            console.log(response)
-            setList(
-                items
-            );
+            let dataToSend = items.map(el => {
+                    let element = el
+                    el.id = el.index
+                    delete el.index
+                    return element
+                })
+            setList(dataToSend)
+            console.log(dataToSend)
+
+            await api(`/items/edit`, 'put', {items: dataToSend})
+
+            generateRandom(Math.random())
+
         } catch (e) {
             console.error(e)
         }
-        console.log(items)
     }
 
 
     return (
-                <ul>
-                    <DragDropContext onDragEnd={onDragEnd}>
-                        <Droppable droppableId="droppable">
-                            {(provided, snapshot) => (
-                                <div
-                                    ref={provided.innerRef}
-                                    style={getListStyle(snapshot.isDraggingOver)}
-                                    {...provided.droppableProps}
-                                >
-                                    {list.map((item, index) => (
-                                        <Draggable
-                                            key={item.id}
-                                            draggableId={`item-${item.id}`}
-                                            index={index}
-                                        >
-                                            {(provided, snapshot) => (
-                                                <div>
-                                                    <div
-                                                        ref={provided.innerRef}
-                                                        {...provided.dragHandleProps}
-                                                        {...provided.draggableProps}
-                                                        style={getItemStyle(
-                                                            provided.draggableProps.style,
-                                                            snapshot.isDragging
-                                                        )}
-                                                    >
-                                                        {item.description}
-                                                    </div>
-                                                    {provided.placeholder}
-                                                </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="droppable">
+                {(provided, snapshot) => (
+                    <Listing
+                        ref={provided.innerRef}
+                        style={getListStyle(snapshot.isDraggingOver)}
+                        {...provided.droppableProps}
+                    >
+                        {list.map((item, index) => (
+                            <Draggable
+                                key={item.position}
+                                draggableId={item.position.toString()}
+                                index={index}
+                            >
+                                {(provided, snapshot) => (
+                                    <Item className={`list-item-${item.position}`}>
+                                        <ItemContent
+                                            ref={provided.innerRef}
+                                            {...provided.dragHandleProps}
+                                            {...provided.draggableProps}
+                                            style={getItemStyle(
+                                                provided.draggableProps.style,
+                                                snapshot.isDragging
                                             )}
-                                        </Draggable>
-                                    ))}
-                                    {provided.placeholder}
-                                </div>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
-                </ul>
+                                        >
+                                            <Title>{item.title}</Title>
+
+                                            <p>
+                                                <title>Descripion</title>
+                                                <span>{item.description}</span>
+                                            </p>
+                                            <p>Deadline: {moment(item.deadlineAt).format('YYYY-MM-DD')}</p>
+                                            position: {item.position}
+                                            id: {item.index}
+                                            <Button variant={"contained"} color={'secondary'}
+                                                onClick={(ev) => handleDelete(ev, item.id)}>
+                                                <DeleteIcon/>
+                                            </Button>
+                                        </ItemContent>
+                                        {provided.placeholder}
+                                    </Item>
+                                )}
+                            </Draggable>
+                        ))}
+                        {provided.placeholder}
+                    </Listing>
+                )}
+            </Droppable>
+        </DragDropContext>
     );
 }
 
