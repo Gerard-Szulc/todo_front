@@ -1,13 +1,12 @@
-export default (address, method = 'GET', body) => {
+export default (address, method = 'GET', body, contentType = 'application/json') => {
 
     let headers = new Headers({
-        "Content-Type": 'application/json',
     });
 
     const initObject = {
         method: method.toUpperCase(),
         headers,
-        body: JSON.stringify(body),
+        body: body,
         mode: 'cors',
         cache: 'default'
     };

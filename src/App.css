@@ -1,48 +1,31 @@
+body {
+  background: #373B44;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to right, #4286f4, #373B44);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(to right, #4286f4, #373B44); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+}
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
+.App-title {
   pointer-events: none;
+  font-size: 5vmin;
+  color: whitesmoke;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
 main > ul {
   width: 100%;
 }
-/*.app footer > div {*/
-/*  display: flex;*/
-/*  width: 100vw;*/
-/*  justify-content: center;*/
-/*}*/
+.opened.MuiFab-secondary {
+  background-color: rgb(14, 144, 0);
+}
 .app footer > div > div{
   width: 100vw;
 }
 @media all and (min-width: 800px)
 {
   .app footer > div > div {
-    width: 60vw;
+    width: 61vw;
   }
   main > ul {
     width: 60%;
@@ -51,7 +34,7 @@ main > ul {
 @media all and (min-width: 1100px)
 {
   .app footer > div > div {
-    width: 50vw;
+    width: 51vw;
   }
   main > ul {
     width: 50%;
@@ -60,7 +43,7 @@ main > ul {
 @media all and (min-width: 1366px)
 {
   .app footer > div> div {
-    width: 40vw;
+    width: 41vw;
   }
   main > ul {
     width: 40%;
@@ -72,6 +55,37 @@ footer .app-bar {
   right: auto;
   left: auto;
   bottom: 0;
+  border-radius: 16px 16px 0 0;
+}
+.app-bar > div {
+  bottom: 15px;
+  display: flex;
+  justify-content: center;
+}
+.item-organizer {
+  display: flex;
+}
+.item-organizer > div {
+  width: 66%
+}
+.item-organizer > .item-image-container {
+  padding: 10px;
+  width: 33%
+}
+.item-organizer > .item-image-container img {
+  height: auto;
+  width: 100%;
 }
 
+.item-button-container {
+  display: flex;
+  justify-content: flex-end;
+}
+.item-data > p {
+  word-break: break-all
+}
+
+button.selector-with-file {
+  background-color: rgba(14,144,0,0.84);
+}
 

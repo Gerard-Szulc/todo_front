@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from "styled-components";
 import {DragDropContext, Draggable, Droppable} from 'react-beautiful-dnd';
-import {Button} from "@material-ui/core";
+import {Fab, makeStyles, Backdrop, CircularProgress} from "@material-ui/core";
 import api from "../utils/api";
-import DeleteIcon from '@material-ui/icons/Delete';
+import Clear from '@material-ui/icons/Clear';
 import moment from "moment";
 
 const Listing = styled.ul`
@@ -31,7 +31,6 @@ const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
-    console.log('reor',result)
 
     return result;
 };
@@ -45,115 +44,130 @@ const getItemStyle = (draggableStyle, isDragging) => ({
     margin: `0 0 ${grid}px 0`,
 
     // change background colour if dragging
-    background: isDragging ? 'rgba(193,255,245,0.51)' : 'white',
+    background: isDragging ? 'rgba(193,255,245,0.67)' : 'white',
 
     // styles we need to apply on draggables
     ...draggableStyle
 });
 
 const getListStyle = (isDraggingOver) => ({
-    background: isDraggingOver ? '#c3ffc8' : '#fff992',
+    background: isDraggingOver ? '#aecaff' : 'rgba(255,249,146,0)',
     padding: grid,
 });
+const useStyles = makeStyles(theme => ({
+    backdrop: {
+        zIndex: theme.zIndex.drawer + 1,
+        color: '#fff',
+    }
+}));
 
+function List({setList, list, generateRandom, listLoaded, notificationSetters, handleDelete, ...props}) {
 
-function List({setList, list, generateRandom, ...props}) {
-    const handleDelete = async (event, itemId) => {
-        try {
-            let response = await api(`/items/${itemId}`, 'delete')
-            generateRandom(Math.random())
-            console.log(response)
-        } catch (e) {
-            console.error(e)
+    const classes = useStyles();
+
+    const getUrl = (item) => {
+        return `${process.env.REACT_APP_BACKEND_URL}/pictures/${item.file.uuid}`
+    }
+
+    const getImage = (item) => {
+        if (item.file) {
+            return (<img src={getUrl(item)} alt="todo"/>)
         }
+        return ''
     }
 
     const onDragEnd = async (result) => {
-        // dropped outside the list
         if (!result.destination) {
             return;
         }
 
-        console.log('result',result)
         let items = reorder(
             list,
             result.source.index,
             result.destination.index
         );
 
-
-        console.log(items)
         try {
-            let dataToSend = items.map(el => {
-                    let element = el
-                    el.id = el.index
-                    delete el.index
-                    return element
-                })
-            setList(dataToSend)
-            console.log(dataToSend)
+            let dataToSave = items.map(({...props}, index) => {
+                return {...props, position: index}
+            })
 
-            await api(`/items/edit`, 'put', {items: dataToSend})
+            setList(dataToSave)
 
-            generateRandom(Math.random())
+            await api(`/items/reorder`, 'put', JSON.stringify({items: dataToSave}))
+
+            // generateRandom(Math.random())
 
         } catch (e) {
             console.error(e)
         }
     }
 
+        return listLoaded ? (
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="droppable">
+                    {(provided, snapshot) => (
+                        <Listing
+                            ref={provided.innerRef}
+                            style={getListStyle(snapshot.isDraggingOver)}
+                            {...provided.droppableProps}
+                        >
+                            {
+                                list.map((item, index) => (
+                                <Draggable
+                                    key={index}
+                                    draggableId={index.toString()}
+                                    index={index}
+                                >
+                                    {(provided, snapshot) => (
+                                        <Item className={`list-item-${item.position}`}>
+                                            <ItemContent
+                                                ref={provided.innerRef}
+                                                {...provided.dragHandleProps}
+                                                {...provided.draggableProps}
+                                                style={getItemStyle(
+                                                    provided.draggableProps.style,
+                                                    snapshot.isDragging
+                                                )}
+                                            >
+                                                <div className={"item-organizer"}>
+                                                    <div className={"item-image-container"}>
 
-    return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="droppable">
-                {(provided, snapshot) => (
-                    <Listing
-                        ref={provided.innerRef}
-                        style={getListStyle(snapshot.isDraggingOver)}
-                        {...provided.droppableProps}
-                    >
-                        {list.map((item, index) => (
-                            <Draggable
-                                key={item.position}
-                                draggableId={item.position.toString()}
-                                index={index}
-                            >
-                                {(provided, snapshot) => (
-                                    <Item className={`list-item-${item.position}`}>
-                                        <ItemContent
-                                            ref={provided.innerRef}
-                                            {...provided.dragHandleProps}
-                                            {...provided.draggableProps}
-                                            style={getItemStyle(
-                                                provided.draggableProps.style,
-                                                snapshot.isDragging
-                                            )}
-                                        >
-                                            <Title>{item.title}</Title>
+                                                        {
+                                                            getImage(item)
+                                                        }
+                                                    </div>
+                                                    <div className={"item-data"}>
+                                                        <div className={"item-button-container"}>
+                                                            <Fab color="secondary" aria-label="edit"
+                                                                    onClick={(ev) => handleDelete(item.id)}>
+                                                                <Clear/>
+                                                            </Fab>
+                                                        </div>
+                                                        <Title>{item.title}</Title>
+                                                        <p>
+                                                            <span>{item.description}</span>
+                                                        </p>
+                                                        <p>Deadline date: {moment(item.deadlineAt).format('YYYY-MM-DD')}</p>
+                                                    </div>
+                                                </div>
+                                            </ItemContent>
+                                            {provided.placeholder}
+                                        </Item>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                        </Listing>
+                    )}
+                </Droppable>
+            </DragDropContext>
+        ) : (
+            <Backdrop className={classes.backdrop} open={true}>
+                <CircularProgress color="inherit" />
+            </Backdrop>
+        );
+    }
 
-                                            <p>
-                                                <title>Descripion</title>
-                                                <span>{item.description}</span>
-                                            </p>
-                                            <p>Deadline: {moment(item.deadlineAt).format('YYYY-MM-DD')}</p>
-                                            position: {item.position}
-                                            id: {item.index}
-                                            <Button variant={"contained"} color={'secondary'}
-                                                onClick={(ev) => handleDelete(ev, item.id)}>
-                                                <DeleteIcon/>
-                                            </Button>
-                                        </ItemContent>
-                                        {provided.placeholder}
-                                    </Item>
-                                )}
-                            </Draggable>
-                        ))}
-                        {provided.placeholder}
-                    </Listing>
-                )}
-            </Droppable>
-        </DragDropContext>
-    );
-}
 
 export default List;

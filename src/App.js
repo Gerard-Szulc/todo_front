@@ -37,6 +37,7 @@ width: 100vw;
 
 function App() {
     const [list, setList] = useState([])
+    const [listLoaded, setListLoaded] = useState(false)
     const [refetcher, generateRandom] = useState(0)
     const [addVisible, setAddVisibility] = useState(false)
     const [notificationVisible, setNotificationVisible] = useState(false)
@@ -50,19 +51,26 @@ function App() {
         setNotificationVisible(false)
     }
 
-    useEffect(() => {
+    const handleDelete = async (itemId) => {
+        try {
+            let response = await api(`/items/${itemId}`, 'delete')
+            generateRandom(Math.random())
+            console.log(response)
+        } catch (e) {
+            console.error(e)
+        }
+    }
 
+    useEffect(() => {
         const getTodos = async () => {
 
             try {
-                let {items} = await api(`/items/`, 'GET')
-                let mapped = items.map(el => {
-                    let element = el
-                    el.index = el.id
-                    delete el.id
-                    return element
-                })
-                setList(mapped)
+                let items = await api(`/items/`, 'GET')
+
+                setList(items)
+                setTimeout(() => {
+                    setListLoaded(true)
+                }, 500)
             } catch (e) {
                 setNotificationMode('error')
                 setNotificationVisible(true)
@@ -72,12 +80,12 @@ function App() {
         }
 
         getTodos()
-        return
 
     }, [refetcher]);
     return (
         <div className="app">
-            <header className="">
+            <header className="App">
+                <h1 className={'App-title'}>TODO APP</h1>
             </header>
             <MainAppScreen>
 
@@ -85,6 +93,8 @@ function App() {
                     setList={setList}
                     list={list} generateRandom={generateRandom}
                     notificationSetters={{setNotificationVisible, setNotificationText, setNotificationMode}}
+                    listLoaded={listLoaded}
+                    handleDelete={handleDelete}
                 />
 
             </MainAppScreen>
@@ -93,7 +103,7 @@ function App() {
                 <FooterContent>
                     <AppBar component={"div"} position="fixed" color="primary" variant={"outlined"}  className={"app-bar"}>
                         <Toolbar>
-                            <Fab color="secondary" aria-label="add" onClick={handleFormVisibility}>
+                            <Fab color="secondary" aria-label="add" onClick={handleFormVisibility} className={addVisible ? 'default' : 'opened'}>
                                 {addVisible ? <Remove/> : <Add />}
                             </Fab>
                         </Toolbar>
@@ -113,10 +123,11 @@ function App() {
                                 list={list}
                                 setAddVisibility={setAddVisibility}
                                 notificationSetters={{setNotificationVisible, setNotificationText, setNotificationMode}}
+                                handleDelete={handleDelete}
                             />
                         </ExpansionPanelDetails>
                     </ExpansionPanel>
-                    <Snackbar open={notificationVisible} autoHideDuration={6000} onClose={handleCloseNotification}>
+                    <Snackbar open={notificationVisible} autoHideDuration={2000} onClose={handleCloseNotification}>
                         <Alert onClose={handleCloseNotification} severity={notificationMode}>
                             {notificationText}
                         </Alert>
