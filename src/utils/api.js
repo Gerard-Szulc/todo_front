@@ -1,4 +1,4 @@
-export default (address, method = 'GET', body, contentType = 'application/json') => {
+const api = (address, method = 'GET', body, contentType = 'application/json') => {
 
     let headers = new Headers({
     });
@@ -22,3 +22,5 @@ export default (address, method = 'GET', body, contentType = 'application/json')
         }
     })
 }
+
+export default api;
